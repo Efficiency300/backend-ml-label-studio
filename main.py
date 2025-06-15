@@ -1,5 +1,7 @@
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse
+from icecream import ic
+
 from yolo.model import YOLO
 from response import ModelResponse
 from label_studio_sdk._extensions.label_studio_tools.core.utils.io import get_local_path
@@ -52,7 +54,7 @@ async def predict(request: Request):
     label_config = data.get('label_config')
     params = data.get('params', {})
     context = params.pop('context', {})
-
+    ic(data)
     # Validate tasks and extract image or video paths
     for task in tasks:
         task_data = task.get('data', {})
