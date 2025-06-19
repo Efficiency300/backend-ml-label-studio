@@ -1,0 +1,40 @@
+# Папки виртуального окружения
+venv/
+env/
+
+# Пайчарм файлы
+.idea/
+
+# Скомпилированные файлы Python
+*.pyc
+__pycache__/
+
+# Системные файлы
+*.py[cod]
+*$py.class
+
+# Логи
+*.log
+
+# Тестовые базы данных
+*.db
+*.sqlite
+
+# Дистрибутивы
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+parts/
+var/
+sdist/
+develop-eggs/
+
+# Установочные файлы
+*.egg-info
+.installed.cfg
+*.egg
+
+# macOS файлы
+.DS_Store

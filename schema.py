@@ -5,9 +5,11 @@ from fastapi import HTTPException
 
 class ServerData(BaseModel):
     tasks: List[Dict[str, Any]]
-    project_: str
+    project: str
     project_id: str
     label_config: str
+    # parameters: List = None
+    draft: List
     path: list
 
     @classmethod
@@ -19,6 +21,13 @@ class ServerData(BaseModel):
         project = str(payload.get('project', '1'))
         project_id = project.split('.', 1)[0] if project else None
         label_config = payload.get('label_config')
+        # parameters = payload.get("params")
+        # context = parameters.get("context", {}) or None
+        # params_result = context.get("result", [])
+        draft_result = sum(
+            [task.get("drafts", []) for task in tasks if isinstance(task.get("drafts"), list)],
+            []
+        )
 
         source = []
         for task in tasks:
@@ -31,8 +40,10 @@ class ServerData(BaseModel):
 
         return cls(
             tasks=tasks,
-            project_=project,
+            project=project,
             project_id=project_id,
             label_config=label_config,
+            # parameters=params_result,
+            draft=draft_result,
             path=source,
         )
