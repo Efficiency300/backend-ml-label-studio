@@ -1,25 +1,26 @@
-from kafka import KafkaProducer
+from aiokafka import AIOKafkaProducer
+from redis_tasks_manager import r
 from config import settings
 import json
-import redis
 
-r = redis.Redis(host='localhost', port=6379, db=0)
-def send_tasks(project_id: str, tasks: list[dict]) -> None:
-    producer = KafkaProducer(
+
+async def send_tasks(project_id: str, tasks: list[dict]) -> None:
+    producer = AIOKafkaProducer(
         bootstrap_servers=settings.KAFKA_BOOTSTRAP_SERVERS,
         value_serializer=lambda v: json.dumps(v).encode("utf-8"),
         acks=1,
-        retries=3,
     )
+    await producer.start()
     try:
         for task in tasks:
             task_id = task.get("id")
             data_values = list(task.get("data", {}).values())
-            if not data_values:
-                print(f"⚠️ Пропущена задача {task_id}: отсутствуют данные.")
+            message = data_values[0] if data_values else None
+
+            if not message:
+                print(f"⚠️ Пропущена задача {task_id}: отсутствуют или некорректные данные.")
                 continue
 
-            message = data_values[0]
             payload = {
                 "source": f"http://localhost:8081{message}",
                 "data": {
@@ -28,10 +29,16 @@ def send_tasks(project_id: str, tasks: list[dict]) -> None:
                 }
             }
 
-            print(f"➡️ Подготовка к отправке: {payload['source']}")
-            producer.send(settings.INPUT_TOPIC, payload)
+            print(f"➡️ Отправка задачи {task_id}: {payload['source']}")
+            try:
+                await producer.send(settings.INPUT_TOPIC, payload)
+                await r.incr(f"sent_count:{project_id}")
+                await r.rpush(f"payload:{payload['data']['task_id']}", json.dumps(payload))
+            except Exception as e:
+                print(f"❌ Ошибка при отправке задачи {task_id}: {e}")
+                continue
 
-        producer.flush(timeout=30)
+        await producer.flush()
         print(f"✅ Все задачи отправлены в Kafka для проекта: {project_id}")
     finally:
-        producer.close()
+        await producer.stop()
